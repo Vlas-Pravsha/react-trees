@@ -3,15 +3,15 @@
 import { AlignJustify, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 
-interface arrayType {
+interface ArrayType {
   title: string;
   id: string;
-  children: arrayType[];
+  children: ArrayType[];
   isChildrenVisible: boolean;
 }
 
 export default function HomePage() {
-  const [array, setArray] = useState<arrayType[]>([
+  const [array, setArray] = useState<ArrayType[]>([
     {
       title: "Cat-1",
       id: crypto.randomUUID(),
@@ -27,7 +27,7 @@ export default function HomePage() {
   ]);
 
   function addItem(id: string) {
-    function addChild(arr: arrayType[]): arrayType[] {
+    function addChild(arr: ArrayType[]): ArrayType[] {
       return arr.map((item) => {
         if (item.id === id) {
           const newItem = {
@@ -53,7 +53,7 @@ export default function HomePage() {
   }
 
   function showChildren(id: string) {
-    function show(arr: arrayType[]): arrayType[] {
+    function toggleVisibility(arr: ArrayType[]): ArrayType[] {
       return arr.map((item) => {
         if (item.id === id) {
           return {
@@ -63,47 +63,45 @@ export default function HomePage() {
         } else {
           return {
             ...item,
-            children: show(item.children),
+            children: toggleVisibility(item.children),
           };
         }
       });
     }
 
-    setArray((prevArray) => show(prevArray));
+    setArray((prevArray) => toggleVisibility(prevArray));
   }
 
   function handleRemoveItem(id: string) {
-    function removeItem(arr: arrayType[]): arrayType[] {
+    function removeItem(arr: ArrayType[]): ArrayType[] {
       return arr.reduce((accum, item) => {
-        if (item.id === id) {
-          return accum;
+        if (item.id !== id) {
+          if (item.children.length > 0) {
+            item.children = removeItem(item.children);
+          }
+          accum.push(item);
         }
-
-        if (item.children.length > 0) {
-          item.children = removeItem(item.children);
-        }
-
-        return [...accum, item];
-      }, [] as arrayType[]);
+        return accum;
+      }, [] as ArrayType[]);
     }
 
     setArray((prevArray) => removeItem(prevArray));
   }
 
-  function renderTrees(array: arrayType[]) {
+  function renderTrees(array: ArrayType[]) {
     return array.map((item) => {
       const { id, title, children, isChildrenVisible } = item;
       return (
         <div key={id} className="ml-4">
-          <div className="dropdown rounded-md p-2  hover:bg-slate-500">
+          <div className="dropdown rounded-md p-2 hover:bg-slate-500">
             <div className="flex flex-row items-center gap-2">
-              {children.length > 0 ? (
+              {children.length > 0 && (
                 <AlignJustify
                   size={18}
                   className="hover:cursor-pointer"
                   onClick={() => showChildren(id)}
                 />
-              ) : null}
+              )}
               <div tabIndex={0} className="hover:cursor-pointer">
                 {title}
               </div>
@@ -112,7 +110,7 @@ export default function HomePage() {
                 className="card dropdown-content card-compact z-[1] bg-base-300 text-primary-content shadow"
               >
                 <div className="card-body">
-                  <div className="flex flex-row items-center gap-4 ">
+                  <div className="flex flex-row items-center gap-4">
                     <Plus
                       className="text-[rgba(255,255,255,0.7)] hover:cursor-pointer hover:text-white"
                       onClick={() => addItem(id)}
