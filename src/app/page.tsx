@@ -1,29 +1,32 @@
 "use client";
 
-import { Edit, Plus, Trash } from "lucide-react";
+import { AlignJustify, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 
-export default function HomePage() {
-  interface arrayType {
-    title: string;
-    id: number | string;
-    children: arrayType[];
-  }
+interface arrayType {
+  title: string;
+  id: string;
+  children: arrayType[];
+  isChildrenVisible: boolean;
+}
 
+export default function HomePage() {
   const [array, setArray] = useState<arrayType[]>([
     {
       title: "Cat-1",
       id: crypto.randomUUID(),
       children: [],
+      isChildrenVisible: true,
     },
     {
       title: "Cat-2",
       id: crypto.randomUUID(),
       children: [],
+      isChildrenVisible: true,
     },
   ]);
 
-  function addItem(id: number | string) {
+  function addItem(id: string) {
     function addChild(arr: arrayType[]): arrayType[] {
       return arr.map((item) => {
         if (item.id === id) {
@@ -31,6 +34,7 @@ export default function HomePage() {
             title: `${item.title}-${item.children.length + 1}`,
             id: crypto.randomUUID(),
             children: [],
+            isChildrenVisible: true,
           };
           return {
             ...item,
@@ -48,47 +52,81 @@ export default function HomePage() {
     setArray((prevArray) => addChild(prevArray));
   }
 
-  function handleRemakeText(id: number | string) {
-    return <input type="text" className="px-6 py-2" />;
+  function showChildren(id: string) {
+    function show(arr: arrayType[]): arrayType[] {
+      return arr.map((item) => {
+        if (item.id === id) {
+          return {
+            ...item,
+            isChildrenVisible: !item.isChildrenVisible,
+          };
+        } else {
+          return {
+            ...item,
+            children: show(item.children),
+          };
+        }
+      });
+    }
+
+    setArray((prevArray) => show(prevArray));
   }
 
-  function handleRemoveItem(id: number | string) {
-    const newArray = array.filter((item) => item.id !== id);
-    setArray(newArray);
+  function handleRemoveItem(id: string) {
+    function removeItem(arr: arrayType[]): arrayType[] {
+      return arr.reduce((accum, item) => {
+        if (item.id === id) {
+          return accum;
+        }
+
+        if (item.children.length > 0) {
+          item.children = removeItem(item.children);
+        }
+
+        return [...accum, item];
+      }, [] as arrayType[]);
+    }
+
+    setArray((prevArray) => removeItem(prevArray));
   }
 
   function renderTrees(array: arrayType[]) {
     return array.map((item) => {
-      const { id, title, children } = item;
+      const { id, title, children, isChildrenVisible } = item;
       return (
         <div key={id} className="ml-4">
-          <div className="dropdown rounded-md p-2 hover:bg-slate-500">
-            <div className=" hover:cursor-pointer" tabIndex={0}>
-              {title}
-            </div>
-            <div
-              tabIndex={0}
-              className="card dropdown-content card-compact z-[1] bg-base-300 text-primary-content shadow"
-            >
-              <div className="card-body">
-                <div className="flex flex-row items-center gap-4 ">
-                  <Plus
-                    className="text-[rgba(255,255,255,0.7)] hover:cursor-pointer hover:text-white"
-                    onClick={() => addItem(id)}
-                  />
-                  <Edit
-                    className="text-[rgba(255,255,255,0.7)] hover:cursor-pointer hover:text-white"
-                    onClick={() => handleRemakeText(id)}
-                  />
-                  <Trash
-                    className="text-[rgba(255,255,255,0.7)] hover:cursor-pointer hover:text-white"
-                    onClick={() => handleRemoveItem(id)}
-                  />
+          <div className="dropdown rounded-md p-2  hover:bg-slate-500">
+            <div className="flex flex-row items-center gap-2">
+              {children.length > 0 ? (
+                <AlignJustify
+                  size={18}
+                  className="hover:cursor-pointer"
+                  onClick={() => showChildren(id)}
+                />
+              ) : null}
+              <div tabIndex={0} className="hover:cursor-pointer">
+                {title}
+              </div>
+              <div
+                tabIndex={0}
+                className="card dropdown-content card-compact z-[1] bg-base-300 text-primary-content shadow"
+              >
+                <div className="card-body">
+                  <div className="flex flex-row items-center gap-4 ">
+                    <Plus
+                      className="text-[rgba(255,255,255,0.7)] hover:cursor-pointer hover:text-white"
+                      onClick={() => addItem(id)}
+                    />
+                    <Trash
+                      className="text-[rgba(255,255,255,0.7)] hover:cursor-pointer hover:text-white"
+                      onClick={() => handleRemoveItem(id)}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          {children.length > 0 && renderTrees(children)}
+          {isChildrenVisible && children.length > 0 && renderTrees(children)}
         </div>
       );
     });
